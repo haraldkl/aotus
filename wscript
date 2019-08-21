@@ -1,6 +1,37 @@
 #! /usr/bin/env python
 # encoding: utf-8
-# Harald Klimach 2011
+# Copyright (c) 2011-2013, 2015-2019 Harald Klimach <harald@klimachs.de>
+# Copyright (c) 2011 Konstantin Kleinheinz <k.kleinheinz@grs-sim.de>
+# Copyright (c) 2011 Manuel Hasert <m.hasert@grs-sim.de>
+# Copyright (c) 2011 Jens Zudrop <j.zudrop@grs-sim.de>
+# Copyright (c) 2012 Kartik Jain <k.jain@grs-sim.de>
+# Copyright (c) 2016 Kannan Masilamani <kannan.masilamani@uni-siegen.de>
+#
+# Parts of this file were written by Harald Klimach, Konstantin Kleinheinz,
+# Manuel Hasert, Jens Zudrop and Kartik Jain for German Research School of
+# Simulation Sciences.
+# Parts of this file were written by Harald Klimach and Kannan Masilamani
+# for University of Siegen.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+# OR OTHER DEALINGS IN THE SOFTWARE.
+# **************************************************************************** #
+
 import os
 
 APPNAME = 'aotus'
@@ -9,17 +40,28 @@ VERSION = '1'
 top = '.'
 out = 'build'
 
+def append_aotmodpaths(ctx):
+    ''' Add directories with Python modules for waf to sys.path. '''
+    import sys
+    myabspath = ctx.path.abspath()
+    if not myabspath in sys.path:
+        sys.path.append(myabspath)
+
 def options(opt):
+    append_aotmodpaths(opt)
     opt.load('fortran_compiler')
     opt.load('fortran_language')
     opt.load('compiler_c')
     opt.load('waf_unit_test')
     opt.load('utest_results')
+    opt.load('make_fordoc')
     opt.add_option('--command_sequence', action='store_true', default=False,
                    help='Collect all executed commands into a single file.',
                    dest='cmdsequence')
 
 def configure(conf):
+
+    conf.load('make_fordoc')
 
     # Use a function for the first part to make it callable
     # from parent projects without setting the flags.
@@ -36,6 +78,32 @@ def configure(conf):
     set_fc_flags(conf, ['standard', 'warn', 'w2e', 'debug'],
                  osfcflags)
 
+MKSTEMP_FRAG = '''
+#include <stdlib.h>
+int main(int argc, char **argv) {
+  char fname[] = "aotempXXXXXX";
+  return mkstemp(fname);
+}
+'''
+
+POPEN_FRAG = '''
+#include <stdio.h>
+int main(int argc, char **argv) {
+  FILE *channel;
+  const char fname[] = "aotchannel";
+  const char fmode[] = "r";
+  channel = popen(fname, fmode);
+}
+'''
+
+SRANDOM_FRAG = '''
+#include <stdlib.h>
+int main(int argc, char **argv) {
+  int seed = 42;
+  srandom(seed);
+}
+'''
+
 def subconf(conf):
     """
     Configure parts, which are relevant, even when called
@@ -44,7 +112,10 @@ def subconf(conf):
     of the configuration.
     """
 
+    append_aotmodpaths(conf)
     conf.load('waf_unit_test')
+
+    conf.env.fordurl_aotus = 'https://geb.sts.nt.uni-siegen.de/doxy/aotus/'
 
     # Load the C compiler information
     conf.setenv('cenv',conf.env)
@@ -72,18 +143,19 @@ def subconf(conf):
     tmpenv.detach()
 
     conf.start_msg('Can use POSIX features in Lua')
-    conf.check_cc(function_name='mkstemp',
-                  header_name=['stdlib.h', 'unistd.h'],
-                  define_name='MKSTEMP',
+    conf.check_cc(header_name=['stdlib.h', 'unistd.h', 'stdio.h', 'math.h'],
+                  define_name='POSIXH',
                   mandatory=False)
-    conf.check_cc(function_name='popen',
-                  header_name=['stdio.h'],
-                  define_name='POPEN',
-                  mandatory=False)
-    conf.check_cc(function_name='srandom',
-                  header_name=['stdlib.h', 'math.h'],
-                  define_name='SRANDOM',
-                  mandatory=False)
+    if conf.is_defined('POSIXH'):
+      conf.check_cc(fragment=MKSTEMP_FRAG,
+                    define_name='MKSTEMP',
+                    mandatory=False)
+      conf.check_cc(fragment=POPEN_FRAG,
+                    define_name='POPEN',
+                    mandatory=False)
+      conf.check_cc(fragment=SRANDOM_FRAG,
+                    define_name='SRANDOM',
+                    mandatory=False)
 
     if ( conf.is_defined('POPEN') and
          conf.is_defined('MKSTEMP') and
@@ -115,44 +187,57 @@ def subconf(conf):
 
 
 def build(bld):
+    from waflib import Runner
+    orig_refill = Runner.Parallel.refill_task_list
+    def catch_circular(self):
+        from waflib import Errors
+        import fortran_circular
+        try:
+            return(orig_refill(self))
+        except Errors.WafError as e:
+            if not fortran_circular.find_circular_dependency(str(e)):
+                raise(e)
+    Runner.Parallel.refill_task_list = catch_circular
+
+    append_aotmodpaths(bld)
     if bld.options.cmdsequence:
         import waflib.extras.command_sequence
 
-    core_sources = ['external/lua-5.3.4/src/lapi.c',
-                    'external/lua-5.3.4/src/lcode.c',
-                    'external/lua-5.3.4/src/lctype.c',
-                    'external/lua-5.3.4/src/ldebug.c',
-                    'external/lua-5.3.4/src/ldo.c',
-                    'external/lua-5.3.4/src/ldump.c',
-                    'external/lua-5.3.4/src/lfunc.c',
-                    'external/lua-5.3.4/src/lgc.c',
-                    'external/lua-5.3.4/src/llex.c',
-                    'external/lua-5.3.4/src/lmem.c',
-                    'external/lua-5.3.4/src/lobject.c',
-                    'external/lua-5.3.4/src/lopcodes.c',
-                    'external/lua-5.3.4/src/lparser.c',
-                    'external/lua-5.3.4/src/lstate.c',
-                    'external/lua-5.3.4/src/lstring.c',
-                    'external/lua-5.3.4/src/ltable.c',
-                    'external/lua-5.3.4/src/ltm.c',
-                    'external/lua-5.3.4/src/lundump.c',
-                    'external/lua-5.3.4/src/lvm.c',
-                    'external/lua-5.3.4/src/lzio.c']
-    lib_sources = ['external/lua-5.3.4/src/lauxlib.c',
-                   'external/lua-5.3.4/src/lbaselib.c',
-                   'external/lua-5.3.4/src/lbitlib.c',
-                   'external/lua-5.3.4/src/lcorolib.c',
-                   'external/lua-5.3.4/src/ldblib.c',
-                   'external/lua-5.3.4/src/liolib.c',
-                   'external/lua-5.3.4/src/lmathlib.c',
-                   'external/lua-5.3.4/src/loslib.c',
-                   'external/lua-5.3.4/src/ltablib.c',
-                   'external/lua-5.3.4/src/lstrlib.c',
-                   'external/lua-5.3.4/src/lutf8lib.c',
-                   'external/lua-5.3.4/src/loadlib.c',
-                   'external/lua-5.3.4/src/linit.c']
-    lua_sources = ['external/lua-5.3.4/src/lua.c']
-    luac_sources = ['external/lua-5.3.4/src/luac.c']
+    core_sources = ['external/lua-5.3.5/src/lapi.c',
+                    'external/lua-5.3.5/src/lcode.c',
+                    'external/lua-5.3.5/src/lctype.c',
+                    'external/lua-5.3.5/src/ldebug.c',
+                    'external/lua-5.3.5/src/ldo.c',
+                    'external/lua-5.3.5/src/ldump.c',
+                    'external/lua-5.3.5/src/lfunc.c',
+                    'external/lua-5.3.5/src/lgc.c',
+                    'external/lua-5.3.5/src/llex.c',
+                    'external/lua-5.3.5/src/lmem.c',
+                    'external/lua-5.3.5/src/lobject.c',
+                    'external/lua-5.3.5/src/lopcodes.c',
+                    'external/lua-5.3.5/src/lparser.c',
+                    'external/lua-5.3.5/src/lstate.c',
+                    'external/lua-5.3.5/src/lstring.c',
+                    'external/lua-5.3.5/src/ltable.c',
+                    'external/lua-5.3.5/src/ltm.c',
+                    'external/lua-5.3.5/src/lundump.c',
+                    'external/lua-5.3.5/src/lvm.c',
+                    'external/lua-5.3.5/src/lzio.c']
+    lib_sources = ['external/lua-5.3.5/src/lauxlib.c',
+                   'external/lua-5.3.5/src/lbaselib.c',
+                   'external/lua-5.3.5/src/lbitlib.c',
+                   'external/lua-5.3.5/src/lcorolib.c',
+                   'external/lua-5.3.5/src/ldblib.c',
+                   'external/lua-5.3.5/src/liolib.c',
+                   'external/lua-5.3.5/src/lmathlib.c',
+                   'external/lua-5.3.5/src/loslib.c',
+                   'external/lua-5.3.5/src/ltablib.c',
+                   'external/lua-5.3.5/src/lstrlib.c',
+                   'external/lua-5.3.5/src/lutf8lib.c',
+                   'external/lua-5.3.5/src/loadlib.c',
+                   'external/lua-5.3.5/src/linit.c']
+    lua_sources = ['external/lua-5.3.5/src/lua.c']
+    luac_sources = ['external/lua-5.3.5/src/luac.c']
 
     wrap_sources = ['LuaFortran/wrap_lua_dump.c']
 
@@ -169,42 +254,12 @@ def build(bld):
                      'source/aot_table_module.f90',
                      'source/aot_table_ops_module.f90',
                      'source/aot_top_module.f90',
-		     'source/aot_out_module.f90',
-		     'source/aot_out_general_module.f90',
+                     'source/aot_out_module.f90',
+                     'source/aot_out_general_module.f90',
                      'source/aot_path_module.f90',
                      'source/aot_references_module.f90',
                      'source/aot_vector_module.f90']
 
-    # C parts
-    bld(
-        features = 'c',
-        source = core_sources + lib_sources,
-        use = ['LUA_POSIX'],
-        target = 'luaobjs')
-
-    bld(
-        features = 'c cstlib',
-        use = 'luaobjs',
-        target = 'lualib')
-
-    bld(
-        features = 'c',
-        source = wrap_sources,
-        use = 'luaobjs',
-        includes = 'external/lua-5.3.4/src',
-        target = 'wrapobjs')
-
-    ## Building the lua interpreter (usually not needed).
-    ## Only built if libm available.
-    if 'LIB_MATH' in bld.all_envs['cenv']:
-      bld(
-          features = 'c cprogram',
-          use = ['lualib', 'MATH'],
-          source = lua_sources,
-          target = 'lua')
-
-
-    # Fortran parts
     if bld.env['fortsupp_quad_kind'] > 0:
         aotus_sources += ['source/quadruple/aot_quadruple_fun_module.f90']
         aotus_sources += ['source/quadruple/aot_quadruple_table_module.f90']
@@ -231,6 +286,52 @@ def build(bld):
         aotus_sources += ['source/extdouble/dummy_extdouble_out_module.f90']
         aotus_sources += ['source/extdouble/dummy_extdouble_vector_module.f90']
 
+    if bld.cmd == 'docu':
+        from waflib.extras.make_fordoc import gendoc
+        import os
+        source_nodes = []
+        for source in aotus_sources+flu_sources:
+            resource = bld.path.find_resource(source)
+            if resource:
+                source_nodes.append(resource)
+        tgt = bld.path.get_bld().make_node('docu/modules.json')
+        bld( rule = gendoc,
+             source = source_nodes,
+             target = tgt,
+             extern = [],
+             mainpage = os.path.join(bld.top_dir, 'aotus', 'aot_mainpage.md') )
+        bld.env.fordext_aotus = tgt
+        return None
+
+    # C parts
+    bld(
+        features = 'c',
+        source = core_sources + lib_sources,
+        use = ['LUA_POSIX'],
+        target = 'luaobjs')
+
+    bld(
+        features = 'c cstlib',
+        use = 'luaobjs',
+        target = 'lualib')
+
+    bld(
+        features = 'c',
+        source = wrap_sources,
+        use = 'luaobjs',
+        includes = 'external/lua-5.3.5/src',
+        target = 'wrapobjs')
+
+    ## Building the lua interpreter (usually not needed).
+    ## Only built if libm available.
+    if 'LIB_MATH' in bld.all_envs['cenv']:
+      bld(
+          features = 'c cprogram',
+          use = ['lualib', 'MATH'],
+          source = lua_sources,
+          target = 'lua')
+
+    # Fortran parts
     bld(
         features = 'fc',
         source = flu_sources,
@@ -292,10 +393,10 @@ def kill_marker_flags(self):
 @TaskGen.feature('c', 'cstlib', 'cprogram', 'cxx')
 @TaskGen.before('process_rule')
 def enter_cenv(self):
-  if self.bld.variant == '':
-    self.env = self.bld.all_envs['cenv'].derive()
-  else:
+  try:
     self.env = self.bld.all_envs['cenv_'+self.bld.variant].derive()
+  except KeyError:
+    self.env = self.bld.all_envs['cenv'].derive()
 
 
 # A class to describe the debug variant
@@ -316,12 +417,12 @@ def dump(bld):
     bld.options.no_tests = True
     # call the build function as if a real build were performed
     build(bld)
-    
+
     from waflib import Task
     bld.commands = []
     bld.targets = []
     bld.make_ins = []
-    
+
     # store the command executed
     def exec_command(self, *k, **kw):
         self.command_executed = k[0]

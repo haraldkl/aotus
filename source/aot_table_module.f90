@@ -1,12 +1,37 @@
-! Copyright (C) 2011-2013 German Research School for Simulation Sciences GmbH,
-!                         Aachen and others.
-!               2013-2016 University of Siegen.
-! Please see the COPYRIGHT file in this directory for details.
+! Copyright (c) 2011-2016, 2018-2019 Harald Klimach <harald@klimachs.de>
+! Copyright (c) 2012 Manuel Hasert <m.hasert@grs-sim.de>
+! Copyright (c) 2013 James Spencer <j.spencer@imperial.ac.uk>
+! Copyright (c) 2014 Kannan Masilamani <kannan.masilamani@uni-siegen.de>
+! Copyright (c) 2019 Nick Papior <nickpapior@gmail.com>
+!
+! Parts of this file were written by Harald Klimach and Manuel Hasert for
+! German Research School of Simulation Sciences.
+! Parts of this file were written by Harald Klimach and Kannan Masilamani
+! for University of Siegen.
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in
+! all copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+! IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+! DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+! OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+! OR OTHER DEALINGS IN THE SOFTWARE.
+! **************************************************************************** !
 
 !> This module provides some convenient functions to act on Lua tables.
 module aot_table_module
   use flu_binding
-  use flu_kinds_module, only: double_k, single_k, long_k
+  use flu_kinds_module, only: double_k, single_k, int_k, long_k
   use aot_err_module, only: aoterr_Fatal, aoterr_NonExistent, &
     &                       aoterr_WrongType
   use aot_top_module, only: aot_top_get_val
@@ -69,6 +94,7 @@ module aot_table_module
     module procedure set_table_long
     module procedure set_table_string
     module procedure set_table_logical
+    module procedure set_table_userdata
   end interface
 
   !> Get a value from the Lua script.
@@ -298,7 +324,7 @@ contains
     integer, intent(in), optional :: thandle
 
     !> Value of the table entry if it exists.
-    integer, intent(out) :: val
+    integer(kind=int_k), intent(out) :: val
 
     !> Error code to indicate what kind of problem might have occured.
     integer, intent(out) :: ErrCode
@@ -318,7 +344,7 @@ contains
 
     !> Some default value, that should be used, if the variable is not set in
     !! the Lua script.
-    integer, intent(in), optional :: default
+    integer(kind=int_k), intent(in), optional :: default
 
     logical :: valid_args
     integer :: toptype
@@ -717,7 +743,7 @@ contains
     integer, intent(in) :: thandle
 
     !> Value of the table entry if it exists.
-    integer, intent(in) :: val
+    integer(kind=int_k), intent(in) :: val
 
     !> Name of the entry to look for.
     !!
@@ -892,6 +918,53 @@ contains
 
   end subroutine set_table_string
 
+  !> Put user-data pointer into a table.
+  subroutine set_table_userdata(val, L, thandle, key, pos)
+    use, intrinsic :: iso_c_binding, only: c_ptr
+
+    type(flu_State) :: L !! Handle to the Lua script.
+
+    !> Handle to the table to look the value up in.
+    integer, intent(in) :: thandle
+
+    !> Pointer to set in the table.
+    type(c_ptr), intent(in) :: val
+
+    !> Name of the entry to set.
+    !!
+    !! Key and pos are both optional, however at least one of them has to be
+    !! supplied.
+    !! The key takes precedence over the pos if both are given.
+    character(len=*), intent(in), optional :: key
+
+    !> Position of the entry to set in the table.
+    !!
+    !! It allows the access to unnamed arrays in the Lua tables.
+    integer, intent(in), optional :: pos
+
+    if (thandle > 0) then
+      if (present(key)) then
+        ! If there is a key, use that.
+        ! First put the value on the top of the stack
+        call flu_pushlightuserdata(L, val)
+        ! Now put it into the table
+        call flu_setField(L, thandle, trim(key))
+      else
+        ! No key given, try to put the value by position
+        if (present(pos)) then
+          ! First put the index, where to write the value into the table, on the
+          ! stack.
+          call flu_pushInteger(L, pos)
+          ! Now put the actual value on the top of the stack.
+          call flu_pushlightuserdata(L, val)
+          ! Get the two entries from the stack into the table.
+          call flu_setTable(L, thandle)
+        end if
+      end if
+    end if
+
+  end subroutine set_table_userdata
+
 
   !> This subroutine takes a one dimensional array, and puts it as a table
   !! into the Lua context.
@@ -931,7 +1004,7 @@ contains
   !! The returned thandle provides the index to access this newly created
   !! table.
   subroutine create_1Darray_double(L, thandle, val)
-    type(flu_State) :: L !! Handle to the Lua script.
+    type(flu_State) :: L !< Handle to the Lua script.
 
     !> Handle to access the newly created table.
     integer, intent(out) :: thandle

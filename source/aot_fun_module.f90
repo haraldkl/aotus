@@ -1,7 +1,29 @@
-! Copyright (C) 2011-2013 German Research School for Simulation Sciences GmbH,
-!                         Aachen and others.
-!               2013-2016 University of Siegen
-! Please see the COPYRIGHT file in this directory for details.
+! Copyright (c) 2011-2016 Harald Klimach <harald@klimachs.de>
+! Copyright (c) 2012 James Spencer <j.spencer@imperial.ac.uk>
+! Copyright (c) 2018 Raphael Haupt <Raphael.Haupt@student.uni-siegen.de>
+!
+! Parts of this file were written by Harald Klimach for
+! German Research School of Simulation Sciences and University of Siegen.
+! Parts of this file were written by Raphael Haupt for University of Siegen.
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in
+! all copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+! IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+! DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+! OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+! OR OTHER DEALINGS IN THE SOFTWARE.
+! **************************************************************************** !
 
 !> This module provides access to Lua functions
 !!
@@ -110,7 +132,6 @@ contains
 
     !> Position of the function to look up in the table.
     integer, intent(in), optional :: pos
-
     call aot_table_push(L, parent, key, pos)
     fun = aot_fun_top(L)
   end subroutine aot_fun_table

@@ -1,6 +1,7 @@
 This LuaFortran interface is provided by the German Research School for
 Simulation Sciences GmbH, Aachen and licensed under the same terms as Lua
 which is available under the MIT license reproduced below.
+See individual files for respective contributors.
 
 See also:
 http://www.lua.org/license.html.
@@ -9,7 +10,7 @@ http://www.lua.org/license.html.
 
 Copyright (C) 2011-2013 German Research School for Simulation Sciences GmbH,
               Aachen and others.
-              2015 University of Siegen.
+              2015-208 University of Siegen and others.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

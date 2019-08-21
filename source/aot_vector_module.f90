@@ -1,7 +1,32 @@
-! Copyright (C) 2011-2013 German Research School for Simulation Sciences GmbH,
-!                         Aachen and others.
-!               2013-2016 University of Siegen.
-! Please see the COPYRIGHT file in this directory for details.
+! Copyright (c) 2012-2016, 2018 Harald Klimach <harald@klimachs.de>
+! Copyright (c) 2012 Kannan Masilamani <k.masilamani@grs-sim.de>
+! Copyright (c) 2013 James Spencer <j.spencer@imperial.ac.uk>
+! Copyright (c) 2018 Nick Papior <nickpapior@gmail.com>
+! Copyright (c) 2015 Verena Krupp
+!
+! Parts of this file were written by Harald Klimach for
+! German Research School of Simulation Sciences.
+! Parts of this file were written by Harald Klimach and Verena Krupp
+! for University of Siegen.
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in
+! all copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+! IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+! DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+! OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+! OR OTHER DEALINGS IN THE SOFTWARE.
+! **************************************************************************** !
 
 !> This module provides some convenience functions to access complete vectors
 !! from a lua table at once.
@@ -15,7 +40,7 @@
 !! Otherwise the interfaces correspond to the scalar retrieval operations.
 module aot_vector_module
   use flu_binding
-  use flu_kinds_module, only: double_k, single_k, long_k
+  use flu_kinds_module, only: double_k, single_k, int_k, long_k
   use aot_table_ops_module, only: aot_table_close, aot_table_top, &
     &                             aot_table_length, aot_table_push, &
     &                             aot_table_first, aot_type_of
@@ -230,7 +255,7 @@ contains
 
     !> Vector read from the Lua table, will have the same length as the table
     !! but not exceed maxlength, if provided.
-    integer, intent(out), allocatable :: val(:)
+    integer(kind=int_k), intent(out), allocatable :: val(:)
 
     !> Error code describing problems encountered in each of the components.
     !! Will be allocated with the same length as the returned vector.
@@ -249,7 +274,7 @@ contains
 
     !> A default vector to use, if no proper definition is found.
     !! Components will be filled with the help of this default definition.
-    integer, intent(in), optional :: default(:)
+    integer(kind=int_k), intent(in), optional :: default(:)
 
     integer :: toptype
 
@@ -552,7 +577,7 @@ contains
     integer, intent(in), optional :: thandle !! Handle of the parent table
 
     !> Vector read from the Lua table.
-    integer, intent(out) :: val(:)
+    integer(kind=int_k), intent(out) :: val(:)
 
     !> Error code describing problems encountered in each of the components.
     !! This array has to have the same length as val.
@@ -566,7 +591,7 @@ contains
 
     !> A default vector to use, if no proper definition is found.
     !! Components will be filled with the help of this default definition.
-    integer, intent(in), optional :: default(:)
+    integer(kind=int_k), intent(in), optional :: default(:)
 
     integer :: toptype
 
@@ -946,7 +971,7 @@ contains
 
     !> Vector read from the Lua table, will have the same length as the table
     !! but not exceed maxlength, if provided.
-    integer, intent(out), allocatable :: val(:)
+    integer(kind=int_k), intent(out), allocatable :: val(:)
 
     !> Error code describing problems encountered in each of the components.
     !! Will be allocated with the same length as the returned vector.
@@ -959,7 +984,7 @@ contains
 
     !> A default vector to use, if no proper definition is found.
     !! Components will be filled with the help of this default definition.
-    integer, intent(in), optional :: default(:)
+    integer(kind=int_k), intent(in), optional :: default(:)
 
     integer :: vect_handle
     integer :: table_len, vect_len, def_len
@@ -1509,7 +1534,7 @@ contains
     type(flu_State) :: L !! Handle to the lua script
 
     !> Vector read from the Lua table.
-    integer, intent(out) :: val(:)
+    integer(kind=int_k), intent(out) :: val(:)
 
     !> Error code describing problems encountered in each of the components.
     !! This array has to have the same length as val.
@@ -1517,7 +1542,7 @@ contains
 
     !> A default vector to use, if no proper definition is found.
     !! Components will be filled with the help of this default definition.
-    integer, intent(in), optional :: default(:)
+    integer(kind=int_k), intent(in), optional :: default(:)
 
     integer :: vect_handle
     integer :: table_len, vect_len, def_len, val_len

@@ -1,7 +1,28 @@
-! Copyright (C) 2011-2013 German Research School for Simulation Sciences GmbH,
-!                         Aachen and others.
-!               2013-2014 University of Siegen
-! Please see the COPYRIGHT file in this directory for details.
+! Copyright (c) 2012-2016, 2019 Harald Klimach <harald@klimachs.de>
+! Copyright (c) 2016 Kannan Masilamani <kannan.masilamani@uni-siegen.de>
+!
+! Parts of this file were written by Harald Klimach for
+! German Research School of Simulation Sciences and University of Siegen.
+! Parts of this file were written by Kannan Masilamani for University of Siegen.
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in
+! all copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+! IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+! DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+! OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+! OR OTHER DEALINGS IN THE SOFTWARE.
+! **************************************************************************** !
 
 !> Collection of general operations required for the output of Lua scripts.
 module aot_out_general_module
@@ -42,12 +63,22 @@ contains
   !! pre-connected file.
   !! If both are given, the file will be opened and connected to a new unit,
   !! outUnit is ignored in this case.
-  subroutine aot_out_open(put_conf, filename, outUnit, indentation)
+  subroutine aot_out_open(put_conf, filename, outUnit, indentation, outstat)
     !------------------------------------------------------------------------
     type(aot_out_type), intent(out) :: put_conf !! Handle for the file
     character(len=*), optional, intent(in) :: filename !! File to open
     integer, optional, intent(in) :: outUnit !! Pre-connected unit to write to
     integer, optional, intent(in) :: indentation !! Spacer per indentation level
+
+    !> IO status of the open operation for the given filename or an indication
+    !! whether the given outUnit is actually connected to an open file.
+    !!
+    !! This returns 0 if the the returned unit has properly been properly
+    !! connected to the file.
+    integer, optional, intent(out) :: outstat
+    !------------------------------------------------------------------------
+    integer :: iError
+    logical :: isOpen
     !------------------------------------------------------------------------
 
     if (present(indentation)) then
@@ -59,12 +90,20 @@ contains
     if (present(filename)) then
       put_conf%outunit = newunit()
       open(unit = put_conf%outunit, file = trim(filename), action = 'write', &
-        &  status='replace', recl = 360)
+        &  status='replace', recl = 360, iostat=iError)
       put_conf%externalOpen = .false.
     else if (present(outUnit)) then
+      inquire(unit=outUnit, opened=isOpen)
+      if (isOpen) then
+        iError = 0
+      else
+        iError = -10
+      end if
       put_conf%externalOpen = .true.
       put_conf%outunit = outUnit
     end if
+
+    if (present(outstat)) outstat = iError
 
     put_conf%indent = 0
     put_conf%stack(:) = 0
@@ -83,7 +122,7 @@ contains
     !------------------------------------------------------------------------
     type(aot_out_type), intent(inout)  :: put_conf
     !------------------------------------------------------------------------
-    if( .not. put_conf%externalOpen ) close( put_conf%outunit )
+    if ( .not. put_conf%externalOpen ) close( put_conf%outunit )
   end subroutine aot_out_close
 ! **************************************************************************** !
 
@@ -228,7 +267,7 @@ contains
     !!
     !! This optional parameter might be used to react on errors in the calling
     !! side. If neither ErrCode nor ErrString are given, this subroutine will
-    !! stop the program execution and print the error message 
+    !! stop the program execution and print the error message
     integer, intent(out), optional :: ErrCode
 
     !> Error description
@@ -253,7 +292,7 @@ contains
 
     ! length of chunk
     chunk_len = len(chunk)
-   
+
     inquire(unit=out_conf%outunit, opened=unitOpened)
     if (unitOpened) then
       chunk = ''
@@ -268,7 +307,7 @@ contains
             err_string = 'Error reading out conf unit'
           end if
           exit ! exit reading
-        end if  
+        end if
         if (chunk_left >= read_len) then
           chunk_left = chunk_left - len(trim(chunk))
           chunk =  trim(chunk)//new_line('x')//trim(chunk_line)
@@ -296,7 +335,7 @@ contains
         write(*,*) 'From aot_out_toChunk: '//trim(err_string)
         STOP
       end if
-    end if  
+    end if
   end subroutine aot_out_toChunk
 ! **************************************************************************** !
 

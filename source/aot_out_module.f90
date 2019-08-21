@@ -1,7 +1,32 @@
-! Copyright (C) 2011-2013 German Research School for Simulation Sciences GmbH,
-!                         Aachen and others.
-!               2013-2014 University of Siegen
-! Please see the COPYRIGHT file in this directory for details.
+! Copyright (c) 2012-2014, 2016-2018 Harald Klimach <harald@klimachs.de>
+! Copyright (c) 2012 Manuel Hasert <m.hasert@grs-sim.de>
+! Copyright (c) 2012 Kartik Jain <k.jain@grs-sim.de>
+! Copyright (c) 2012 Simon Zimny <s.zimny@grs-sim.de>
+! Copyright (c) 2016 Kannan Masilamani <kannan.masilamani@uni-siegen.de>
+!
+! Parts of this file were written by Harald Klimach, Manuel Hasert, Kartik Jain
+! and Simon Zimny for German Research School of Simulation Sciences.
+! Parts of this file were written by Kannan Masilamani and Harald Klimach for
+! University of Siegen.
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in
+! all copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+! IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+! DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+! OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+! OR OTHER DEALINGS IN THE SOFTWARE.
+! **************************************************************************** !
 
 !> A module to produce Lua scripts with nested tables.
 !!
@@ -13,7 +38,7 @@
 !! output methods. Thus this module could stand alone, along with the
 !! flu_kinds_module without the Lua library.
 module aot_out_module
-  use flu_kinds_module, only: double_k, single_k, long_k
+  use flu_kinds_module, only: double_k, single_k, int_k, long_k
   use aot_out_general_module, only: aot_out_type, aot_out_open, aot_out_close, &
     &                               aot_out_open_table, aot_out_close_table, &
     &                               aot_out_breakline, aot_out_toChunk
@@ -79,7 +104,7 @@ contains
     type(aot_out_type), intent(inout)  :: put_conf
     character(len=*), optional, intent(in) :: vname
     logical, optional, intent(in) :: advance_previous
-    integer, intent(in) :: val
+    integer(kind=int_k), intent(in) :: val
     !------------------------------------------------------------------------
     character(len=3) :: adv_string
     !------------------------------------------------------------------------
@@ -317,7 +342,7 @@ contains
     character(len=*), optional, intent(in) :: vname
 
     !> Actual data to write into the script
-    integer, intent(in) :: val(:)
+    integer(kind=int_k), intent(in) :: val(:)
 
     !> Flag if this array should be put on the same line as the last entry of
     !! the parent table.
@@ -637,7 +662,7 @@ contains
     character(len=*), optional, intent(in) :: vname
 
     !> Actual data to write into the script
-    character(len=80), intent(in) :: val(:)
+    character(len=*), intent(in) :: val(:)
 
     !> Flag if this array should be put on the same line as the last entry of
     !! the parent table.

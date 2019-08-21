@@ -1,6 +1,31 @@
 #! /usr/bin/env pyhton
 # encoding: utf-8
-# Harald Klimach 2011
+# Copyright (c) 2016-2017, 2018 Harald Klimach <harald@klimachs.de>
+# Copyright (c) 2016 Peter Vitt <peter.vitt2@uni-siegen.de>
+# Copyright (c) 2016 Nikhil Anand <nikhil.anand@uni-siegen.de>
+# Copyright (c) 2018 Raphael Haupt <Raphael.Haupt@student.uni-siegen.de>
+#
+# Parts of this file were written by Harald Klimach, Peter Vitt, Nikhil Anand
+# and Raphael Haupt for University of Siegen.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+# OR OTHER DEALINGS IN THE SOFTWARE.
+# **************************************************************************** #
 
 ### Definition of some default fortran flags for various compilers.
 ### Easily select and combine any of the desired features.
@@ -11,6 +36,7 @@
 ### * GFORTRAN (Gnu Fortran Compiler from the GCC)
 ### * IFORT (Intel Fortran Compiler)
 ### * NAG (NAG Fortran Compiler)
+### * NFORT (NEC Fortran Compiler)
 ### * OPEN64 (Open64 Compiler)
 ### * PGFC (PGI Fortran Compiler)
 ### * SOL (Oracle Solaris Studio Compiler)
@@ -37,6 +63,7 @@ fcopts['BENCH', 'debug'] = ['-fbacktrace', '-fcheck=bounds,do,mem,pointer,recurs
 fcopts['BENCH', 'optimize'] = ['-O3', '-march=native']
 fcopts['BENCH', 'openmp'] = ['-fopenmp']
 fcopts['BENCH', 'noomp'] = []
+fcopts['BENCH', 'pre'] = []
 fcopts['BENCH', 'profile'] = ['-pg']
 fcopts['BENCH', 'fixform'] = ['-ffixed-form']
 fcopts['BENCH', 'freeform'] = ['-ffree-form']
@@ -45,10 +72,11 @@ fcopts['GFORTRAN', 'warn'] = ['-Wall', '-Wconversion', '-Wimplicit-interface', '
 fcopts['GFORTRAN', 'w2e'] = ['-Werror']
 fcopts['GFORTRAN', 'standard'] = ['-std=f2008']
 fcopts['GFORTRAN', 'double'] = ['-fdefault-real-8']
-fcopts['GFORTRAN', 'debug'] = ['-fbacktrace', '-fcheck=bounds,do,mem,pointer,recursion', '-finit-real=nan', '-ffpe-trap=invalid,zero,overflow', '-g']
+fcopts['GFORTRAN', 'debug'] = ['-Og', '-fbacktrace', '-fcheck=bounds,do,mem,pointer,recursion', '-finit-real=nan', '-ffpe-trap=invalid,zero,overflow', '-g']
 fcopts['GFORTRAN', 'optimize'] = ['-O3', '-march=native']
 fcopts['GFORTRAN', 'openmp'] = ['-fopenmp']
 fcopts['GFORTRAN', 'noomp'] = []
+fcopts['GFORTRAN', 'pre'] = ['-cpp']
 fcopts['GFORTRAN', 'profile'] = ['-pg']
 fcopts['GFORTRAN', 'fixform'] = ['-ffixed-form']
 fcopts['GFORTRAN', 'freeform'] = ['-ffree-form']
@@ -61,6 +89,7 @@ fcopts['IFORT', 'debug'] = '-check all -check noarg_temp_created'.split() + ['-t
 fcopts['IFORT', 'optimize'] = '-xHost -O3 -ipo -no-prec-div'.split()
 fcopts['IFORT', 'openmp'] = ['-qopenmp']
 fcopts['IFORT', 'noomp'] = []
+fcopts['IFORT', 'pre'] = ['-fpp']
 fcopts['IFORT', 'profile'] = ['-qopt-report=5', '-pg']
 fcopts['IFORT', 'fixform'] = []
 fcopts['IFORT', 'freeform'] = []
@@ -73,6 +102,7 @@ fcopts['IFORTwin', 'debug'] = '/check:all, noarg_temp_created'.split() + ['/trac
 fcopts['IFORTwin', 'optimize'] = '/QxHost /O3 /Qprec-div-'.split()
 fcopts['IFORTwin', 'openmp'] = ['/Qopenmp']
 fcopts['IFORTwin', 'noomp'] = []
+fcopts['IFORTwin', 'pre'] = ['/fpp']
 fcopts['IFORTwin', 'profile'] = ['/Qopt-report:5']
 fcopts['IFORTwin', 'fixform'] = []
 fcopts['IFORTwin', 'freeform'] = []
@@ -85,6 +115,7 @@ fcopts['SOL', 'debug'] = ['-C', '-xcheck', '-traceback', '-g']
 fcopts['SOL', 'optimize'] = ['-fast', '-xipo']
 fcopts['SOL', 'openmp'] = []
 fcopts['SOL', 'noomp'] = []
+fcopts['SOL', 'pre'] = ['-cpp']
 fcopts['SOL', 'profile'] = ['-pg']
 fcopts['SOL', 'fixform'] = []
 fcopts['SOL', 'freeform'] = []
@@ -97,6 +128,7 @@ fcopts['PGFC', 'debug'] = ['-Mbounds', '-Mchkptr', '-Mlist', '-traceback', '-g']
 fcopts['PGFC', 'optimize'] = ['-O4']
 fcopts['PGFC', 'openmp'] = []
 fcopts['PGFC', 'noomp'] = []
+fcopts['PGFC', 'pre'] = ['-cpp']
 fcopts['PGFC', 'profile'] = ['-pg']
 fcopts['PGFC', 'fixform'] = []
 fcopts['PGFC', 'freeform'] = []
@@ -109,6 +141,7 @@ fcopts['BGXLF', 'debug'] = ['-C', '-g', '-qflttrap', '-qfullpath']
 fcopts['BGXLF', 'optimize'] = ['-O5']
 fcopts['BGXLF', 'openmp'] = ['-qsmp']
 fcopts['BGXLF', 'noomp'] = []
+fcopts['BGXLF', 'pre'] = ['-cpp']
 fcopts['BGXLF', 'profile'] = []
 fcopts['BGXLF', 'fixform'] = ['-qfixed=72']
 fcopts['BGXLF', 'freeform'] = ['-qfree']
@@ -121,6 +154,7 @@ fcopts['CRAY', 'debug'] = ['-e', 'DcI', '-R', 'bcps']
 fcopts['CRAY', 'optimize'] = ['-O3']
 fcopts['CRAY', 'openmp'] = ['-h', 'omp']
 fcopts['CRAY', 'noomp'] = ['-h', 'noomp']
+fcopts['CRAY', 'pre'] = ['-cpp']
 fcopts['CRAY', 'profile'] = ['-h', 'profile_generate', '-h', 'func_trace', '-h', 'keepfiles']
 fcopts['CRAY', 'fixform'] = []
 fcopts['CRAY', 'freeform'] = []
@@ -133,6 +167,7 @@ fcopts['NAG', 'debug'] = ['-C=all', '-mtrace=all', '-nan', '-gline', '-g', '-g90
 fcopts['NAG', 'optimize'] = ['-O4']
 fcopts['NAG', 'openmp'] = ['-openmp']
 fcopts['NAG', 'noomp'] = []
+fcopts['NAG', 'pre'] = ['-cpp']
 fcopts['NAG', 'profile'] = ['-pg']
 fcopts['NAG', 'fixform'] = []
 fcopts['NAG', 'freeform'] = []
@@ -145,9 +180,23 @@ fcopts['NEC', 'debug'] = ['-check,all','-traceback','-init,stack=nan','-mtrace,f
 fcopts['NEC', 'optimize'] = ['-C,hopt']
 fcopts['NEC', 'openmp'] = ['-openmp']
 fcopts['NEC', 'noomp'] = []
+fcopts['NEC', 'pre'] = ['-cpp']
 fcopts['NEC', 'profile'] = ['-ftrace','-O,fullmsg','-pvctl,fullmsg','-R,fmtlist,diaglist,summary']
 fcopts['NEC', 'fixform'] = []
 fcopts['NEC', 'freeform'] = []
+
+fcopts['NFORT', 'warn'] = ['-Wall', '-Woverflow-errors', '-Wextension', '-Wobsolescent']
+fcopts['NFORT', 'w2e'] = ['-Werror']
+fcopts['NFORT', 'standard'] = ['-std=f2008']
+fcopts['NFORT', 'double'] = []
+fcopts['NFORT', 'debug'] = ['-g', '-fcheck=all', '-traceback', '-minit-stack=nan', '-mmemory-trace-full']
+fcopts['NFORT', 'optimize'] = ['-O4']
+fcopts['NFORT', 'openmp'] = ['-fopenmp']
+fcopts['NFORT', 'noomp'] = []
+fcopts['NFORT', 'pre'] = ['-fpp']
+fcopts['NFORT', 'profile'] = ['-ftrace','-fdiag-vector=2','-report-all']
+fcopts['NFORT', 'fixform'] = ['-ffixed-form']
+fcopts['NFORT', 'freeform'] = ['-ffree-form']
 
 ### End of set of Fortran flags
 #########################################################################
@@ -185,7 +234,7 @@ def set_fc_flags(conf, flagset, osflags=None):
         The flagset has to be an array of strings indicating the
         set of options to pick from the fcopts table.
     '''
-    myflags = osflags or []
+    myflags = list(osflags) or []
     if getattr(conf.env, 'IFORT_WIN32', False):
       fcname = 'IFORTwin'
     else:
@@ -197,7 +246,7 @@ def set_fc_flags(conf, flagset, osflags=None):
         # Add the sanitize option to the debug flags for gfortran >= 4.8
         if (fs == 'debug') and (fcname == 'GFORTRAN'):
             if ( (int(conf.env.FC_VERSION[0]) == 4)
-                 and (int(conf.env.FC_VERSION[1]) >= 8) 
+                 and (int(conf.env.FC_VERSION[1]) >= 8)
                  or int(conf.env.FC_VERSION[0]) > 4):
                 myflags += ['-fsanitize=address']
 

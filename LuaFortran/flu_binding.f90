@@ -1,3 +1,34 @@
+! Copyright (c) 2011-2013, 2015-2016, 2018 Harald Klimach <harald@klimachs.de>
+! Copyright (c) 2012, 2014 Kannan Masilamani <kannan.masilamani@uni-siegen.de>
+! Copyright (c) 2012-2013 James Spencer <j.spencer@imperial.ac.uk>
+! Copyright (c) 2014 dgloger
+! Copyright (c) 2015 Peter Vitt <peter.vitt2@uni-siegen.de>
+! Copyright (c) 2016 Ruth Franklin
+!
+! Parts of this file were written by Harald Klimach for
+! German Research School of Simulation Sciences
+! Parts of this file were written by Harald Klimach, Kannan Masilamani and
+! Peter Vitt for University of Siegen.
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in
+! all copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+! IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+! DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+! OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+! OR OTHER DEALINGS IN THE SOFTWARE.
+! **************************************************************************** !
+
 !> This module provides the Fortran Lua interface.
 !!
 !! It defines a flu_state which encapsulates the
@@ -17,7 +48,7 @@ module flu_binding
   use lua_fif
   use lua_parameters
   use dump_lua_fif_module
-  use flu_kinds_module, only: long_k
+  use flu_kinds_module, only: int_k, long_k
 
   implicit none
 
@@ -95,6 +126,11 @@ module flu_binding
     module procedure flu_pushdouble
   end interface flu_pushnumber
 
+  interface flu_pushinteger
+    module procedure flu_pushint
+    module procedure flu_pushlong
+  end interface flu_pushinteger
+
   interface flu_dump
     module procedure flu_dump_toBuf
   end interface flu_dump
@@ -104,7 +140,7 @@ module flu_binding
   abstract interface
     function lua_Function(s) result(val) bind(c)
       use, intrinsic :: iso_c_binding
-      integer(c_int) :: val 
+      integer(c_int) :: val
       type(c_ptr), value :: s
     end function lua_Function
   end interface
@@ -329,8 +365,10 @@ contains
     logical :: exists
 
     integer(kind=c_int) :: retCode
+    integer(kind=c_int) :: c_index
 
-    retCode = lua_next(L%state, index)
+    c_index = int(index, kind = c_int)
+    retCode = lua_next(L%state, c_index)
     exists = (retCode /= 0)
   end function flu_next
 
@@ -372,16 +410,25 @@ contains
   end subroutine flu_pop
 
 
-  subroutine flu_pushinteger(L, n)
+  subroutine flu_pushint(L, n)
     type(flu_State) :: L
-    integer :: n
+    integer(kind=int_k) :: n
 
     integer(kind=lua_int) :: n_c
 
     n_c = int(n, lua_int)
     call lua_pushinteger(L%state, n_c)
-  end subroutine flu_pushinteger
+  end subroutine flu_pushint
 
+  subroutine flu_pushlong(L, n)
+    type(flu_State) :: L
+    integer(kind=long_k) :: n
+
+    integer(kind=lua_int) :: n_c
+
+    n_c = int(n, lua_int)
+    call lua_pushinteger(L%state, n_c)
+  end subroutine flu_pushlong
 
   subroutine flu_pushboolean(L, b)
     type(flu_State) :: L
@@ -617,19 +664,19 @@ contains
     c_index = int(index, kind=c_int)
     luat = lua_type(L%state, c_index)
     flut = int(luat)
-    
+
   end function flu_type
 
 
   subroutine flu_pushcclosure(L, fn, n)
-    type(flu_State), value :: L 
+    type(flu_State), value :: L
     procedure(lua_Function) :: fn
-    integer :: n 
+    integer :: n
 
     integer(c_int) :: c_n
     type(c_funptr) :: c_fn
 
-    c_n = n 
+    c_n = n
     c_fn = c_funloc(fn)
 
     call lua_pushcclosure(L%state, c_fn, c_n)
@@ -637,7 +684,7 @@ contains
   end subroutine flu_pushcclosure
 
 
-  subroutine flu_register(L, fn_name, fn) 
+  subroutine flu_register(L, fn_name, fn)
 
     ! lua_register is defined as a macro in lua.h and isn't accessible from
     ! Fortran.
@@ -670,7 +717,7 @@ contains
 
 
   ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! !
-  ! Wrapper routines for the auxiliary library 
+  ! Wrapper routines for the auxiliary library
   ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! !
 
   function fluL_loadfile(L, filename) result(errcode)
@@ -736,7 +783,7 @@ contains
 
   subroutine fluL_openlibs(L)
     type(flu_State) :: L
-    
+
     if (.not. L%opened_libs) then
       call luaL_openlibs(L%state)
       L%opened_libs = .true.
@@ -783,7 +830,7 @@ contains
 
 
   ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! !
-  ! Routines for using existing Lua states with 
+  ! Routines for using existing Lua states with
   ! flu_binding
   ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! !
 

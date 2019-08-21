@@ -1,7 +1,35 @@
+! Copyright (c) 2012, 2016 Harald Klimach <harald@klimachs.de>
+! Copyright (c) 2012 James Spencer <j.spencer@imperial.ac.uk>
+!
+! Parts of this file were written by Harald Klimach for
+! German Research School of Simulation Sciences and University of
+! Siegen.
+! Parts of this file were written by Peter Vitt for University of
+! Siegen.
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in
+! all copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+! IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+! DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+! OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+! OR OTHER DEALINGS IN THE SOFTWARE.
+! **************************************************************************** !
+
 program aotus_sample
   use flu_kinds_module, only: double_k
-  use aotus_module, only: flu_State, open_config_file, close_config, aot_get_val, &
-    &                     aot_top_get_val, &
+  use aotus_module, only: flu_State, open_config_file, close_config, &
+    &                     aot_get_val, aot_top_get_val, &
     &                     aoterr_Fatal, aoterr_WrongType, aoterr_NonExistent
   use aot_table_module, only: aot_table_open, aot_table_close, aot_table_length
   use aot_fun_module, only: aot_fun_type, aot_fun_open, aot_fun_put, &
@@ -14,7 +42,7 @@ program aotus_sample
 
   real :: width
   type(flu_State) :: conf
-  type(aot_fun_type) :: foo 
+  type(aot_fun_type) :: foo
   type(aot_out_type) :: dummyOut
   integer :: iError
   integer :: vErr(3)
@@ -54,8 +82,9 @@ program aotus_sample
     if (btest(iError, aoterr_NonExistent)) write(*,*) 'Variable not existent!'
     if (btest(iError, aoterr_WrongType)) write(*,*) 'Variable has wrong type!'
   else
-    if (btest(iError, aoterr_NonExistent)) write(*,*) 'Variable not set in config,' &
-      &                                            // ' Using default value!'
+    if (btest(iError, aoterr_NonExistent)) write(*,*) &
+      &  'Variable not set in config,' &
+      &  // ' Using default value!'
     write(*,*) 'height =', width
   end if
 
@@ -78,12 +107,14 @@ program aotus_sample
           &              key = trim(keys(i)), pos = i)
         if (btest(iError, aoterr_Fatal)) then
           write(*,*) 'FATAL Error occured, while retrieving'//trim(keys(i))
-          if (btest(iError, aoterr_NonExistent)) write(*,*) 'Variable not existent!'
-          if (btest(iError, aoterr_WrongType)) write(*,*) 'Variable has wrong type!'
+          if (btest(iError, aoterr_NonExistent)) write(*,*) &
+            &  'Variable not existent!'
+          if (btest(iError, aoterr_WrongType)) write(*,*) &
+            &  'Variable has wrong type!'
         else
-          if (btest(iError, aoterr_NonExistent)) write(*,*) 'Variable not set in' &
-            &                                            // ' config, Using default' &
-            &                                            // '  value!'
+          if (btest(iError, aoterr_NonExistent)) write(*,*) &
+            &  'Variable not set in' &
+            &  // ' config, Using default value!'
           write(*,*) trim(keys(i))//' = ', trim(buffer)
         end if
       end do
@@ -99,7 +130,7 @@ program aotus_sample
 
   !> First open a function with aot_fun_open
   call aot_fun_open(L = conf, fun = foo, key = 'ic_density')
-  
+
   !> Then put required parameters into it with
   !! aot_fun_put
   call aot_fun_put(L = conf, fun = foo, arg = coord(1))
@@ -108,7 +139,7 @@ program aotus_sample
 
 
   !> Execute the function with aot_fun_do
-  call aot_fun_do(L = conf, fun = foo, nresults = 1) 
+  call aot_fun_do(L = conf, fun = foo, nresults = 1)
 
   !> Retrieve the possibly multiple results with
   !! get_top_val.
@@ -121,7 +152,7 @@ program aotus_sample
 
   !> Repeat putting and retrieving if needed.
   !! Close the function again with aot_fun_close.
-  call aot_fun_close(L = conf, fun = foo) 
+  call aot_fun_close(L = conf, fun = foo)
 
   call close_config(conf)
 
@@ -131,7 +162,7 @@ program aotus_sample
   call aot_out_val(dummyOut, 123, 'width')
   call aot_out_val(dummyOut, 456, 'height')
 
-!!  call aot_out_open_table(dummyOut, 'origin')  
+!!  call aot_out_open_table(dummyOut, 'origin')
 !!  call aot_out_val(dummyOut, 100)
 !!  call aot_out_val(dummyOut, 0)
 !!  call aot_out_close_table(dummyOut)

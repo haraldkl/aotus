@@ -5,10 +5,9 @@ The AOTUS library provides a Fortran wrapper around the C-API of the
 [Lua](http://www.lua.org) scripting language, allowing a convenient usage of Lua
 scripts as configuration files in Fortran applications.
 
-Please visit the [Wiki](https://bitbucket.org/apesteam/aotus/wiki/Home)
-for more information on its usage.
-And for a detailed interface reference visit its
+Please visit the
 [FORD generated documentation](https://geb.sts.nt.uni-siegen.de/doxy/aotus)
+for more information on its usage and details.
 
 *This library is released under a simplified MIT licence, please have a look into the COPYRIGHT file for details.*
 
@@ -20,8 +19,8 @@ where questions can be asked.
 How To Build
 ------------
 
-[Waf](http://code.google.com/p/waf/) is used as build system, but alternatively
-you may also use the provided Makefile, see below.
+[Waf](http://waf.io/) is used as build system, but alternatively
+you may also use a Makefile, see below.
 
 Run:
 
@@ -29,7 +28,7 @@ Run:
 ./waf configure build
 ~~~~~~~~~~~
 
-to build the aotus library.
+to build the Aotus library.
 If you want to select a specific Fortran compiler, set the environment variable
 *FC*.
 And for a specific C compiler, set the environment variable *CC*.
@@ -46,9 +45,32 @@ By running:
 
 you get a list of available options to the waf script.
 
-### Build using Makefile
+### Generating a Makefile
 
-The aotus library can also built by using the provided `Makefile`,
+If you do not want to use waf for the actual compilation of the project,
+you can generate a `Makefile` with waf by running the `dump` command.
+To resemble more closely the usual auto-tool steps, there is a
+`configure` script to run the configuration phase of waf and the
+generation of the Makefile.
+This will create a Makefile in the build subdirectory, so you can
+compile aotus with:
+
+~~~~~~~~~~~{.sh}
+./configure
+cd build
+make
+~~~~~~~~~~~
+
+You can get a list of available options by running
+
+~~~~~~~~~~~{.sh}
+./configure --help
+~~~~~~~~~~~
+
+
+### Build with the smeka system
+
+The aotus library can also built by using the provided `Makefile.smeka`,
 which utilizes the [smeka](https://github.com/zerothi/smeka) build system.
 
 This build system requires the compilation in a subdirectory.
@@ -60,7 +82,7 @@ mkdir build
 cd build
 {
 echo 'TOP_DIR = ..'
-echo 'include $(TOP_DIR)/Makefile'
+echo 'include $(TOP_DIR)/Makefile.smeka'
 } > Makefile
 make
 ~~~~~
@@ -106,8 +128,8 @@ ranlib libaotus.a
 What is Built
 -------------
 
-For your convenience the Lua library is included in version 5.3.4 (released
-2017-01-30).
+For your convenience the Lua library is included in version 5.3.5 (released
+2018-07-10).
 Its objects are completely gathered into the final *libaotus* library, so you
 only need to link against this single static library to gain the
 configuration features of Aotus in your Fortran application.
@@ -150,8 +172,8 @@ also the source of this small program is found.
 
 Getting Started
 ---------------
-The central module in this library is the [[aotus_module]].
-Its documentation and the [Aotus overview](page/index.html) would be good
+The central module in this library is the [aotus_module](https://geb.sts.nt.uni-siegen.de/doxy/aotus/module/aotus_module.html).
+Its documentation and the [Aotus overview](https://geb.sts.nt.uni-siegen.de/doxy/aotus/page/index.html) would be good
 starting points.
 
 Related Projects
@@ -179,7 +201,7 @@ http://www.lua.org/license.html.
 ---
 Copyright (C) 2011-2013 German Research School for Simulation Sciences GmbH,
                         Aachen and others.
-              2014-2017 University of Siegen.
+              2014-2018 University of Siegen.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,7 +1,28 @@
-! Copyright (C) 2011-2013 German Research School for Simulation Sciences GmbH,
-!                         Aachen and others.
-!               2013-2014 University of Siegen.
-! Please see the COPYRIGHT file in this directory for details.
+! Copyright (c) 2012-2016, 2018 Harald Klimach <harald@klimachs.de>
+! Copyright (c) 2013 James Spencer <j.spencer@imperial.ac.uk>
+!
+! Parts of this file were written by Harald Klimach for
+! German Research School of Simulation Sciences and University of
+! Siegen.
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in
+! all copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+! IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+! DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+! OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+! OR OTHER DEALINGS IN THE SOFTWARE.
+! **************************************************************************** !
 
 !> Module for interaction with topmost element of the Lua stack.
 !!
@@ -10,7 +31,7 @@
 !! All intrinsic variables except complex numbers can be accessed this way.
 module aot_top_module
   use flu_binding
-  use flu_kinds_module, only: double_k, single_k, long_k
+  use flu_kinds_module, only: double_k, single_k, int_k, long_k
   use aot_err_module, only: aoterr_Fatal, aoterr_NonExistent, &
     &                       aoterr_WrongType, aot_err_handler
 
@@ -151,14 +172,14 @@ contains
     type(flu_State) :: L !! Handle to the Lua script
 
     !> Value of the Variable in the script
-    integer, intent(out) :: val
+    integer(kind=int_k), intent(out) :: val
 
     !> Error code to indicate what kind of problem might have occured.
     integer, intent(out) :: ErrCode
 
     !> Some default value, that should be used, if the variable is not set in
     !! the Lua script.
-    integer, optional, intent(in) :: default
+    integer(kind=int_k), optional, intent(in) :: default
 
     logical :: not_retrievable
 
