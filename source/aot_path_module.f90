@@ -406,7 +406,7 @@ contains
     !! the path, or used to open the path in.
     type(flu_state) :: conf
     !> The opened function
-    type(aot_fun_type), intent(in) :: fun
+    type(aot_fun_type), intent(inout) :: fun
     !> A flag to indicate, wether to close the Lua script, default
     !! is false.
     logical, intent(in), optional :: closeLua
